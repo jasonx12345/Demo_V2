@@ -1,0 +1,194 @@
+# Panel Shop Demo Guide
+
+This guide is for running a live demo of the static B&M panel shop prototype. It assumes the demo is open at `index.html` or a served URL such as `http://127.0.0.1:8765/panel-demo/index.html`.
+
+The demo is local only. Badge sign-in is cosmetic, all records are fabricated, and nothing is sent to a server.
+
+## Presenter Setup
+
+Open the bench and the wall board in two windows:
+
+- Bench: `index.html`
+- Floor board: `board.html`
+
+Use the same browser profile for both windows so the board receives bench updates through browser storage. If you are serving the folder locally, keep the `/panel-demo/` path when testing GitHub Pages-style routing.
+
+Before a clean run, click **Reset demo** on the sign-in screen. Reset restores the seeded panels and signs out. Generated serial and work-order counters keep their high-water marks in the same browser data so numbers are not reused.
+
+## Demo Badges
+
+| Badge | Person | Role | Use For |
+| --- | --- | --- | --- |
+| 4471 | A. Kovach | technician | Normal technician work |
+| 5104 | R. Bissonnette | technician | Second technician, handoff notes |
+| 3218 | J. Okafor | lead | Lead signoff, findings disposition |
+| 2907 | M. Cardoso | lead | Different-lead final release signoff |
+
+Use **Switch user** whenever you need to change roles. Switching users returns to the queue and keeps the demo state.
+
+## Fast Demo Path
+
+1. Sign in as **4471**.
+2. Search `merivale`. Point out the result count, then clear the search.
+3. Sort by **time in stage** and point out how the queue reorders by the current stage age.
+4. Find `PNL-602` and click anywhere on its row, such as the serial, project, rack, or blank row area. The panel opens from the whole row, not only the **Open** button.
+5. On `PNL-602`, point out that the bench shows the current stage only.
+6. Complete step 10, enter `148` on step 11, and complete it.
+7. Try to sign off step 11 as the technician. The app blocks it because lead signoff is required.
+8. Switch to **3218**, reopen `PNL-602`, and sign off step 11. The panel advances to Testing, and the wall board moves the card.
+9. On Testing step 12, create a finding with severity **Needs evaluation** and defer it to **Testing**. Show that it appears both on the step and in the all-findings view.
+10. Open `PNL-589`. A seeded shift-handoff note blocks work until acknowledged. Acknowledge it and show the history entry.
+11. As a lead, open an upcoming stage and complete a step out of sequence. The step, history, and report keep the out-of-sequence stamp.
+12. Open `PNL-601`, finish step 16, then show that Final QA review and release are blocked by the seeded label-alignment finding.
+13. Disposition `F-000002` as a lead, complete step 17, complete step 18, switch to **2907**, and sign off the final release.
+14. Open the report for `PNL-601` and select **Save / Print PDF**. In the browser print window, choose **Save as PDF** as the destination and save the generated build report.
+15. Use **New work order** to create three draft panels under one parent job. Show the generated serials and WOs, then demonstrate **Release to shop** and **Begin work** on one panel. The released panel appears in Receiving on the wall board with zero completed steps.
+
+## Feature Callouts
+
+### Queue
+
+The queue is the working launch point. It supports search by serial, work order, project, and rack. Sorting can show due order, time in stage, stage order, or project grouping.
+
+The whole panel row is clickable and keyboard accessible. Press Enter or Space when a row has focus.
+
+### Single-Stage Bench
+
+Each panel opens directly to its current stage. Completed and upcoming stages remain visible in the side rail for review and lead-only exception demos.
+
+Technicians work in order. Leads can record out-of-sequence work, and that exception is permanently labelled.
+
+### Lead Signoff
+
+Steps 7, 11, and 18 require lead signoff. The lead must be different from the person who completed the step. This is easiest to show on `PNL-602` step 11 and `PNL-601` step 18.
+
+### Readings
+
+Captured values show immediate pass or fail feedback before completion.
+
+Useful examples:
+
+- Step 11 wire count: `148` passes.
+- Step 4 chassis torque: `14` fails, then `22` passes.
+- Step 13 insulation resistance: `100` passes.
+
+A failed reading can still be committed so the QA story can show traceability. **Correct reading** appends the correction while preserving the original failed value.
+
+### Findings
+
+Every checklist step has a single **Create finding** action. Findings can be awareness or needs-evaluation items, and they can be deferred to Wiring, Testing, or Final QA.
+
+Findings do not stop ordinary build work. Final QA review and release are blocked until every finding has a lead disposition.
+
+Seeded findings:
+
+- `F-000001`: `PNL-588`, cracked terminal block, needs evaluation, deferred to Testing.
+- `F-000002`: `PNL-601`, label alignment, awareness, deferred to Final QA.
+
+### Final QA
+
+Final QA has three steps:
+
+- Step 16: visual inspection and labelling.
+- Step 17: review open findings and completed failed readings.
+- Step 18: final QA release with independent lead signoff.
+
+Use `PNL-601` for this story because its seeded finding blocks review until dispositioned.
+
+### Handoff Notes
+
+Panel notes are for shift handoff and shop-floor coordination. The next different opener must acknowledge an active note before working.
+
+Use `PNL-589` to show this immediately. It has a seeded note about blue 14 AWG stock.
+
+### Presenter Recovery
+
+Use these controls when you want to show audit-friendly correction without pretending mistakes vanish:
+
+- **Undo** clears that step and all later completions, readings, and signoffs.
+- **Remove signoff** is lead-only and returns the step to needs-signoff.
+- **Correct reading** appends a new reading and keeps the prior failed reading visible.
+
+Findings, notes, and history remain after recovery actions.
+
+### Wall Board
+
+The floor board is passive. It has no controls, navigation, or scrolling. Cards leave the board when the panel is complete.
+
+Status colors:
+
+- Blue: active work.
+- Green: completed records or stages.
+- Amber: attention, findings, or WIP threshold pressure.
+- Red: late panels or failed-reading emphasis.
+- Neutral: upcoming or untouched work.
+
+At 1920 x 1080, the board is tuned for five stage columns with up to four large cards per column.
+
+### Work Orders
+
+Use **New work order** from the queue to create draft demo panels. Enter a parent job number, project, checklist template/panel type, quantity, starting rack, and due date.
+
+The demo creates padded six-digit serials and work orders, such as `PNL-000612` and `WO-025912`. The parent job number is entered by the presenter and shared across the generated panels.
+
+Creating the work order attaches the standard checklist instructions, but it does not complete any work. New orders follow this lifecycle:
+
+1. **Draft** — the checklist is visible, every stage shows `0` completed steps, and all work actions are locked.
+2. **Released** — a lead selects **Release to shop**. The order appears in Receiving on the floor board as ready to begin.
+3. **In progress** — a shop user selects **Begin work**. The Receiving stage clock starts and technicians manually record every checklist step.
+
+Draft orders stay off the floor board. The History and build report record creation, release, and work-start events separately.
+
+### PDF Build Report
+
+Open a panel and select **Build report**, then choose **Save / Print PDF**. The browser opens its print window with an A4-ready report. Select **Save as PDF** as the destination and save it. The panel serial is used in the suggested document name, such as `PNL-601-build-report.pdf`.
+
+The browser controls the final PDF save location and filename. The report navigation and PDF instructions are automatically hidden from the exported pages.
+
+### Create Your Own Work Report Demo
+
+Use this short scenario when you want to demonstrate creating a report from a brand-new job:
+
+1. From the panel queue, select **New work order**.
+2. Select **Fill demo example**. The form fills with `My Demo Project`, parent job `JOB-DEMO-001`, one Control Panel, rack `700`, and a due date 30 days from today. You can replace any value with your own details.
+3. Select **Create draft work order**. The confirmation shows the new serial, work order, `DRAFT` status, and `0 checklist steps completed`.
+4. Select **Review draft**. The standard instructions are visible, but all completion controls are locked.
+5. Sign in as lead badge **3218** or **2907** and select **Release to shop**.
+6. Select **Begin work**. The panel enters Receiving with every checklist step still incomplete.
+7. Complete Receiving steps manually. The report updates only from the work you record.
+8. Use **Build report**, select **Save / Print PDF**, choose **Save as PDF**, and save your custom work report.
+
+The generated panel remains in the browser until **Reset demo** is used. Its blank draft report can be previewed before release, and its updated work report can be opened at any time from the panel's **Build report** action.
+
+## Suggested Talk Track
+
+"This is a static prototype of a panel-shop production record. The bench gives technicians a stage-focused checklist, while the floor board gives the shop a live view of WIP. The same local data feeds both screens."
+
+"A technician can find work by serial, WO, project, or rack, then click anywhere on the row to open the panel. The app keeps them in sequence, captures readings, and asks for independent lead signoff only where the process calls for it."
+
+"When something is wrong, it becomes a finding tied to the exact checklist step. The finding can move with the job, collect notes, and still let ordinary work continue. Final QA is where every finding and failed reading has to be reviewed before release."
+
+"The recovery controls are here for live demos and real operations: undo the step, remove a signoff, or correct a reading. The audit trail stays intact."
+
+"The wall board is deliberately hands-off. It is meant for the floor: large serials, bottlenecks, late work, WIP pressure, and attention markers without extra interaction."
+
+## Reset Points
+
+Use these seeded panels when you need to jump to a specific story:
+
+| Panel | Best Use |
+| --- | --- |
+| `PNL-602` | Wiring signoff and automatic move to Testing |
+| `PNL-588` | Longest time in stage and existing needs-evaluation finding |
+| `PNL-589` | Handoff note acknowledgement |
+| `PNL-601` | Final QA finding disposition and release |
+| `PNL-611` | Early Receiving work |
+| `PNL-594` | Testing-stage work |
+
+If the demo gets messy, return to the sign-in screen and click **Reset demo**.
+
+## Known Demo Limits
+
+This is a static clickable demo, not a production system. It has no backend, login service, notification system, template engine, printer integration, routing workflow, retest workflow, or office job-costing integration.
+
+Browser storage is the only persistence. A served URL gives the most reliable two-window demo. Direct `file://` use should still open the files, but cross-window storage behavior varies by browser.
