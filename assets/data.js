@@ -7,11 +7,11 @@
   const steps = titles.map((title,i)=>({id:'step-'+(i+1),seq:i+1,stageId:stages[i<2?0:i<7?1:i<11?2:i<15?3:4].id,title,instruction:instructions[i],requiresLeadSignoff:[7,11,18].includes(i+1),capture:captures[i+1]}));
   const users = [{id:'kovach',name:'A. Kovach',badge:'4471',role:'technician'},{id:'bissonnette',name:'R. Bissonnette',badge:'5104',role:'technician'},{id:'okafor',name:'J. Okafor',badge:'3218',role:'lead'},{id:'cardoso',name:'M. Cardoso',badge:'2907',role:'lead'}];
   const specs = [['601','Merivale PCT Building',2,15,1],['602','Merivale PCT Building',5,9,20],['588','Riverside Substation',-1,8,72],['589','Riverside Substation',1,8,40],['590','Riverside Substation',3,8,9],['611','Merivale PCT Building',12,0,1/3],['594','Nepean Feeder Upgrade',8,12,5]];
-  const state = {version:3,currentUserId:null,panels:[],completions:[],signoffs:[],findings:[],notes:[],history:[],stageEntries:[],nextSerial:612,nextWO:25912,nextFinding:3};
+  const state = {version:4,currentUserId:null,panels:[],completions:[],signoffs:[],findings:[],notes:[],history:[],stageEntries:[],nextSerial:612,nextWO:25912,nextFinding:3};
   specs.forEach(([rack,project,days,count,age],pi)=>{
     const date=new Date(now); date.setDate(date.getDate()+days);
     const dueDate=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
-    const panel={id:'PNL-'+rack,serial:'PNL-'+rack,wo:'WO-'+String(25300+Number(rack)).padStart(6,'0'),jobNumber:project.startsWith('Merivale')?'JOB-602':project.startsWith('Riverside')?'JOB-588':'JOB-594',project,rack,panelType:'Feeder Protection Panel',dueDate,workStatus:'in-progress'};
+    const panel={id:'PNL-'+rack,serial:'PNL-'+rack,wo:'WO-'+String(25300+Number(rack)).padStart(6,'0'),jobNumber:project.startsWith('Merivale')?'JOB-602':project.startsWith('Riverside')?'JOB-588':'JOB-594',project,rack,panelType:'Feeder Protection Panel',dueDate,workStatus:'in-progress',stepOverrides:[],lastAccessedAt:new Date(now-(pi+1)*hour).toISOString()};
     state.panels.push(panel);
     const currentIndex=count<2?0:count<7?1:count<11?2:count<15?3:4;
     for(let si=0;si<=currentIndex;si++){

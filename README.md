@@ -36,7 +36,7 @@ The browser tool used here blocks `file://` navigation, so direct double-click t
 5. Open PNL-589. A seeded blue 14 AWG shift-handoff note requires acknowledgement before work. The acknowledgement records a name and time; the note then remains in the collapsed notes list. Only leads can remove notes.
 6. As a lead, choose an upcoming stage and record a step out of sequence. The step, History and report show **OUT OF SEQUENCE**, the lead's name and time. Technicians continue to work in order. Independent signoff still requires a different lead.
 7. On PNL-601, complete step 16. Its seeded label-alignment finding keeps **Review open findings** and **Final QA release** locked. Open F-000002, add a lead disposition and note, return to the checklist, complete review (step 17) and release (step 18). Switch to a different lead and sign off. Open the report, choose **Save / Print PDF**, then select **Save as PDF** in the browser print window.
-8. Use **New work order** to enter your own details or select **Fill demo example**. Create the draft and confirm that it contains the standard instructions with zero completed steps. A lead selects **Release to shop**, then a shop user selects **Begin work**. Only then can Receiving steps be completed manually. Drafts stay off the floor board; released panels appear in Receiving as ready to begin.
+8. Use **New work order** to enter your own details or select **Fill demo example**. Add one row per panel, with its own alphanumeric rack and panel type. Create the draft, edit its checklist if needed, then have a lead select **Release to shop**. A shop user selects **Begin work** before Receiving can be completed manually. Drafts stay off the floor board; released panels appear in Receiving as ready to begin.
 9. Try presenter controls: **Undo**, **Remove signoff**, and **Correct reading**. Inspect History, then reset the demo.
 
 ## Findings and Final QA
@@ -64,9 +64,9 @@ Any signed-in person can add a panel note. The next different person opening the
 
 ## Numbering and hours
 
-New panels use separate shop-wide counters for serials and work orders, padded to six digits: initially `PNL-000612` and `WO-025912`. The office job number is an entered parent field, not generated here. Each generated order starts in Draft with zero progress. A lead releases it, and a shop user begins work before checklist activity is allowed. Seed serials retain the familiar PNL-601-style identifiers; seeded work-order numbers use six digits. Counters persist with the demo data and are retained on reset. Clearing browser storage begins a new independent demo dataset.
+New panels use separate shop-wide counters for serials and work orders: initially `PNL-612` and `WO-025912`. Panel serials are not padded with zeros; work-order numbers remain six digits. The office job number is an entered parent field. Each generated order starts in Draft with zero progress. A lead releases it, and a shop user begins work before checklist activity is allowed. Counters persist with the demo data and are retained on reset. Clearing browser storage begins a new independent demo dataset.
 
-Work-order quantity is limited to 1–50 for a manageable demo. Rack numbers increment from the supplied starting rack. All selectable panel types use the same illustrative checklist; no template engine is implemented.
+Each work order can contain 1–50 explicit panel rows. Rack identifiers accept letters, such as `201A` and `201B`, and each row selects its own panel type/checklist template. While a panel is Draft, **Edit checklist** can change its step titles and instructions before release. The demonstration templates share the same controlled stage, reading and signoff structure.
 
 Hours are derived from the first and last currently recorded **step completion timestamps**: within a stage for stage hours, across a panel for panel hours. Zero or one completion means zero elapsed hours. Project hours on the queue sum panel hours. Signoff times are used for the report's completed date, but do not extend derived hours. Undo changes the current rollups; the original actions remain in History.
 
@@ -86,7 +86,11 @@ WIP thresholds are 3 for Receiving, Assembly, Wiring and Testing, and 2 for Fina
 
 `assets/data.js` assigns `window.SEED`; `assets/store.js` owns state, persistence and derived values. `bench.js`, `board.js` and `report.js` render explicitly labelled fields and tables. JSON serialization is used only for cloning fixtures and localStorage, never for DOM output.
 
-Everything shares the single localStorage key `panel-shop-demo-v1`. State version 3 adds the Draft, Released, and In progress lifecycle. Existing version-2 generated panels with no recorded work migrate to Draft; panels with recorded work remain In progress. Subsequent version-3 sessions retain changes normally.
+Everything shares the single localStorage key `panel-shop-demo-v1`. State version 4 adds last-access timestamps, per-panel checklist edits and explicit panel rows. Existing version-2 and version-3 data migrates without deleting recorded work.
+
+The queue defaults to **Last accessed · newest first** and retains due-date, time-in-stage, stage and project sorting. Responsive CSS adapts the bench, queue forms and checklist to phone-sized screens; the floor board remains a large-display view.
+
+The future production design is to select a project and enter rack identifiers, then populate panel specifications from SQL or another office system query. This static demo keeps those fields manual because it has no backend or database connection.
 
 No test suite or dependencies are included. Development verification uses one-off state checks and a local static preview under `/panel-demo/` to exercise repository-prefix paths.
 

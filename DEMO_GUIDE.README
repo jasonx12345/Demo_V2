@@ -30,7 +30,7 @@ Use **Switch user** whenever you need to change roles. Switching users returns t
 
 1. Sign in as **4471**.
 2. Search `merivale`. Point out the result count, then clear the search.
-3. Sort by **time in stage** and point out how the queue reorders by the current stage age.
+3. Point out that the queue defaults to **Last accessed**, then sort by **time in stage** to show another priority view.
 4. Find `PNL-602` and click anywhere on its row, such as the serial, project, rack, or blank row area. The panel opens from the whole row, not only the **Open** button.
 5. On `PNL-602`, point out that the bench shows the current stage only.
 6. Complete step 10, enter `148` on step 11, and complete it.
@@ -48,7 +48,7 @@ Use **Switch user** whenever you need to change roles. Switching users returns t
 
 ### Queue
 
-The queue is the working launch point. It supports search by serial, work order, project, and rack. Sorting can show due order, time in stage, stage order, or project grouping.
+The queue is the working launch point. It supports search by serial, work order, project, and rack. The default order is most recently accessed first. Sorting can also show due order, time in stage, stage order, or project grouping.
 
 The whole panel row is clickable and keyboard accessible. Press Enter or Space when a row has focus.
 
@@ -127,13 +127,13 @@ At 1920 x 1080, the board is tuned for five stage columns with up to four large 
 
 ### Work Orders
 
-Use **New work order** from the queue to create draft demo panels. Enter a parent job number, project, checklist template/panel type, quantity, starting rack, and due date.
+Use **New work order** from the queue to create draft demo panels. Enter the parent job, project and due date, then add one row per panel. Every row has its own rack identifier and panel type/checklist template. Rack identifiers accept letters, including `201A` and `201B`.
 
-The demo creates padded six-digit serials and work orders, such as `PNL-000612` and `WO-025912`. The parent job number is entered by the presenter and shared across the generated panels.
+The demo creates unpadded panel serials and padded work orders, such as `PNL-612` and `WO-025912`. The parent job number is entered by the presenter and shared across the generated panels.
 
 Creating the work order attaches the standard checklist instructions, but it does not complete any work. New orders follow this lifecycle:
 
-1. **Draft** — the checklist is visible, every stage shows `0` completed steps, and all work actions are locked.
+1. **Draft** — the checklist is visible, every stage shows `0` completed steps, and all work actions are locked. Use **Edit checklist** to change step titles and instructions for that panel before release.
 2. **Released** — a lead selects **Release to shop**. The order appears in Receiving on the floor board as ready to begin.
 3. **In progress** — a shop user selects **Begin work**. The Receiving stage clock starts and technicians manually record every checklist step.
 
@@ -150,13 +150,14 @@ The browser controls the final PDF save location and filename. The report naviga
 Use this short scenario when you want to demonstrate creating a report from a brand-new job:
 
 1. From the panel queue, select **New work order**.
-2. Select **Fill demo example**. The form fills with `My Demo Project`, parent job `JOB-DEMO-001`, one Control Panel, rack `700`, and a due date 30 days from today. You can replace any value with your own details.
+2. Select **Fill demo example**. The form fills with `My Demo Project`, parent job `JOB-DEMO-001`, rack `201A` as a Control Panel, rack `201B` as a Relay Panel, and a due date 30 days from today. You can replace any value or add and remove panel rows.
 3. Select **Create draft work order**. The confirmation shows the new serial, work order, `DRAFT` status, and `0 checklist steps completed`.
 4. Select **Review draft**. The standard instructions are visible, but all completion controls are locked.
-5. Sign in as lead badge **3218** or **2907** and select **Release to shop**.
-6. Select **Begin work**. The panel enters Receiving with every checklist step still incomplete.
-7. Complete Receiving steps manually. The report updates only from the work you record.
-8. Use **Build report**, select **Save / Print PDF**, choose **Save as PDF**, and save your custom work report.
+5. Select **Edit checklist**, change a title or instruction, and save. The change applies only to that panel and appears in its report.
+6. Sign in as lead badge **3218** or **2907** and select **Release to shop**.
+7. Select **Begin work**. The panel enters Receiving with every checklist step still incomplete.
+8. Complete Receiving steps manually. The report updates only from the work you record.
+9. Use **Build report**, select **Save / Print PDF**, choose **Save as PDF**, and save your custom work report.
 
 The generated panel remains in the browser until **Reset demo** is used. Its blank draft report can be previewed before release, and its updated work report can be opened at any time from the panel's **Build report** action.
 
@@ -189,6 +190,8 @@ If the demo gets messy, return to the sign-in screen and click **Reset demo**.
 
 ## Known Demo Limits
 
-This is a static clickable demo, not a production system. It has no backend, login service, notification system, template engine, printer integration, routing workflow, retest workflow, or office job-costing integration.
+This is a static clickable demo, not a production system. It has no backend, login service, notification system, printer integration, routing workflow, retest workflow, office job-costing integration, or SQL/system-query connection.
 
-Browser storage is the only persistence. A served URL gives the most reliable two-window demo. Direct `file://` use should still open the files, but cross-window storage behavior varies by browser.
+The intended future production flow is to select a project and enter rack identifiers, then retrieve panel specifications and characteristics from the office system automatically. The static demo uses manual project and per-panel type entry to demonstrate that workflow without inventing a database connection.
+
+Browser storage is the only persistence. A served URL gives the most reliable two-window demo. Direct `file://` use should still open the files, but cross-window storage behavior varies by browser. The bench, queue and checklist include responsive layouts for phone-sized screens; the floor board remains optimized for a large shop display.
