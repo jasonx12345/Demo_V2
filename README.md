@@ -103,9 +103,9 @@ Browser checks under `/panel-demo/` covered opening a queue row via its serial t
 
 ## Receiving camera-scan pilot
 
-The queue now includes **Scan receiving label**. On an Android phone, the receiver can take a photo or upload an existing image. The static browser demo uses Tesseract.js to run OCR in the browser and the browser `BarcodeDetector` API when available. Parsed part number, description, quantity, barcode and panel/work-order matches are suggestions only: the receiver reviews and edits them before saving. Confirmed receipts are attributed to the signed-in user, written to panel History, and included in the build report.
+The queue now includes **Scan receiving label**. On an Android phone, the receiver can take a photo or upload an existing image. The static browser demo uses PaddleOCR to run OCR in the browser and the browser `BarcodeDetector` API when available. Parsed part number, description, quantity, barcode and panel/work-order matches are suggestions only: the receiver reviews and edits them before saving. Confirmed receipts are attributed to the signed-in user, written to panel History, and included in the build report.
 
-The first OCR use downloads the Tesseract browser worker and English language data from a CDN, so the static demo needs an internet connection for initial loading. Image recognition then runs locally in the browser and the photo is not uploaded by this demo. **Load demo label** gives a reliable fabricated path when presenting without a suitable label or network.
+The first OCR use downloads the PaddleOCR engine and recognition models from a CDN, so the static demo needs an internet connection for initial loading. Image recognition then runs locally in the browser and the photo is not uploaded by this demo. **Load demo label** gives a reliable fabricated path when presenting without a suitable label or network.
 
 For production Android devices, use Google ML Kit Text Recognition and Barcode Scanning with bundled models. That provides offline, on-device processing without a per-scan API charge. OCR reads printed text and barcode scanning decodes labelled identifiers. An unlabelled component cannot be identified reliably by OCR; it needs a controlled part-photo catalogue and a trained on-device image model, or a manual lookup.
 
@@ -113,3 +113,8 @@ For production Android devices, use Google ML Kit Text Recognition and Barcode S
 ### Preparing label photos
 
 Before uploading, crop the photo in your phone or laptop photo editor so only the label and barcode remain, with a small margin. Use a straight, sharp, well-lit close-up. The scan screen includes these instructions. If extraction is poor, crop closer or retake the photo and upload again. Undetected quantities and unmatched work orders remain blank for the receiver to confirm. Barcode values are kept separate from part numbers.
+
+
+### Improved OCR field matching
+
+PaddleOCR runs locally in the website with single-threaded WebAssembly. First use downloads models and runtime files; an internet connection is required for those downloads. Labels and values are grouped by position, common label aliases and minor spelling differences are recognized, and stray border characters are ignored. Conflicting field values and multiple matching panels require manual review. No part catalogue lookup or guaranteed accuracy is implied.

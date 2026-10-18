@@ -215,3 +215,8 @@ The static demo downloads its OCR engine and English model on first use. Use **L
 ### Preparing label photos
 
 Before uploading, crop the photo in your phone or laptop photo editor so only the label and barcode remain, with a small margin. Use a straight, sharp, well-lit close-up. The scan screen includes these instructions. If extraction is poor, crop closer or retake the photo and upload again. Undetected quantities and unmatched work orders remain blank for the receiver to confirm. Barcode values are kept separate from part numbers.
+
+
+### Improved OCR field matching
+
+PaddleOCR runs locally in the website with single-threaded WebAssembly. First use downloads models and runtime files; an internet connection is required for those downloads. Labels and values are grouped by position, common label aliases and minor spelling differences are recognized, and stray border characters are ignored. Conflicting field values and multiple matching panels require manual review. No part catalogue lookup or guaranteed accuracy is implied.

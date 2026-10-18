@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node test-scan.cjs",
+    "build": "esbuild assets/ocr-entry.js --bundle --format=esm --outfile=assets/ocr-bundle.js --external:onnxruntime-web --external:fs --external:path --minify"
+  },
+  "dependencies": {
+    "@paddleocr/paddleocr-js": "0.4.2",
+    "esbuild": "0.25.12"
+  }
+}

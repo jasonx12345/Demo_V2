@@ -1,0 +1,13 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const ctx={window:{}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('assets/scan-matcher.js','utf8'),ctx);
+const panels=[{id:'PNL-611',serial:'PNL-611',wo:'WO-025911'},{id:'PNL-612',serial:'PNL-612',wo:'WO-025912'}];
+const parse=(text)=>ctx.window.ScanMatcher.parse(text,'',panels);
+let r=parse('~~ Panel / Work Order: PNL-611 - WO-025911 - rack 611 eo\n|| Part Number: PN-98765-ABC =\n| Description: 7.5 HP Ind. Induction Motor, AC-460V, 3Ph\nQuantity Received: 1');
+assert.equal(r.partNumber,'PN-98765-ABC');assert.equal(r.quantity,'1');assert.equal(r.panelId,'PNL-611');
+r=parse('Part Nurnber: PN-123\nQty: 4');assert.equal(r.partNumber,'PN-123');assert.equal(r.quantity,'4');
+r=parse('P/N\nABC-12\nDescription\nRelay module');assert.equal(r.partNumber,'ABC-12');assert.equal(r.description,'Relay module');
+r=parse('Tag ID: TAG-34\nSerial Number: SN-555');assert.equal(r.partNumber,'');assert.equal(r.panelId,'');assert.equal(r.quantity,'');
+r=parse('Part Number: ABC-1\nPart Number: ABC-2');assert.equal(r.partNumber,'');assert.ok(r.warnings.length);
+r=parse('Panel: PNL-611 PNL-612');assert.equal(r.panelId,'');assert.ok(r.warnings.length);
+r=parse('Part Number PN-123\nQty 2');assert.equal(r.partNumber,'PN-123');assert.equal(r.quantity,'2');
+console.log('Seven matching regression scenarios passed.');
