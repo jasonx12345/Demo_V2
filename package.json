@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node test-scan.cjs",
+    "test": "node test-scan.cjs && node test-ocr-performance.cjs",
     "build": "esbuild assets/ocr-entry.js --bundle --format=esm --outfile=assets/ocr-bundle.js --external:onnxruntime-web --external:fs --external:path --minify"
   },
   "dependencies": {

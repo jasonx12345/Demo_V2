@@ -219,4 +219,6 @@ Before uploading, crop the photo in your phone or laptop photo editor so only th
 
 ### Improved OCR field matching
 
+Open **Scan receiving label** while preparing your label photo: the OCR engine now starts loading ahead of time. Recognition models are cached for future visits when browser storage permits, and large camera photos are resized automatically to reduce scanning work. The first use still needs a model download. Continue to upload a close, sharp crop so resizing preserves readable text.
+
 PaddleOCR runs locally in the website with single-threaded WebAssembly. First use downloads models and runtime files; an internet connection is required for those downloads. Labels and values are grouped by position, common label aliases and minor spelling differences are recognized, and stray border characters are ignored. Conflicting field values and multiple matching panels require manual review. No part catalogue lookup or guaranteed accuracy is implied.

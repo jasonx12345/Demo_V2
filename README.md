@@ -117,4 +117,6 @@ Before uploading, crop the photo in your phone or laptop photo editor so only th
 
 ### Improved OCR field matching
 
+OCR starts preloading when the receiving scanner opens. Model files use a versioned browser Cache Storage cache across visits, with a network fallback if storage is unavailable. Only model files are cached, never label photos. Oversized photos are scaled to a maximum 2,400-pixel edge before text recognition; smaller images are unchanged. Barcode detection still receives the original photo. Browser storage eviction or a fresh browser profile can require another download. Run `npm test` for matching and performance-behavior checks, and `npm run build` after changing the OCR entry module. Actual latency varies by device and has not been benchmarked by these automated checks.
+
 PaddleOCR runs locally in the website with single-threaded WebAssembly. First use downloads models and runtime files; an internet connection is required for those downloads. Labels and values are grouped by position, common label aliases and minor spelling differences are recognized, and stray border characters are ignored. Conflicting field values and multiple matching panels require manual review. No part catalogue lookup or guaranteed accuracy is implied.

@@ -3,6 +3,7 @@
   let view='queue',panelId=null,selectedStage=null,message='',findingStep=null,correcting=null,editingChecklist=false;
   let search='',sort='last',findingStatus='all',findingSeverity='all',findingPanel='all',selectedFinding=null,created=[];
   let scanData={panelId:'',partNumber:'',description:'',quantity:'',barcode:'',rawText:'',source:'manual review'},scanImage='',scanProgress='';
+  window.addEventListener('labelocrready',()=>{if(view==='scan')window.LabelOCR.preload().catch(()=>{});});
   const person=id=>{const u=Store.user(id);return u?E(u.name)+' · '+u.badge:'System';};
   const currentUser=()=>Store.user(Store.state.currentUserId);
   const isLead=()=>currentUser()?.role==='lead';
@@ -98,7 +99,7 @@
       case 'build':view='build';message='';render();window.scrollTo(0,0);break;
       case 'history':view='history';message='';render();window.scrollTo(0,0);break;
       case 'all-findings':view='findings';selectedFinding=null;findingPanel='all';findingStatus='all';findingSeverity='all';render();break;
-      case 'scan-receiving':view='scan';message='';render();break;
+      case 'scan-receiving':view='scan';message='';render();window.LabelOCR?.preload().catch(()=>{});break;
       case 'rematch-scan':scanData=parseScanText(document.getElementById('scan-raw').value,document.getElementById('scan-barcode').value);scanProgress='Fields matched again from the edited text. Review before saving.';render();break;
       case 'demo-label':scanData={panelId:'PNL-611',partNumber:'AB-1756-24V',description:'DIN rail power supply 24 VDC',quantity:2,barcode:'BM602AB1756',rawText:'B&M MATERIAL RECEIVING\nWO-025911\nPART NO: AB-1756-24V\nDESCRIPTION: DIN RAIL POWER SUPPLY 24 VDC\nQTY: 2\nBARCODE: BM602AB1756',source:'fabricated demo label'};scanProgress='Fabricated label parsed · review the suggested fields before saving.';render();break;
       case 'panel-findings':view='findings';selectedFinding=null;findingPanel=panelId;findingStatus='all';findingSeverity='all';render();break;
