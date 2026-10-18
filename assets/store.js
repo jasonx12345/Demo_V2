@@ -5,12 +5,13 @@
   const stamp=()=>new Date().toISOString();
   let storageAvailable=true;
   function read(){try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):null;}catch(error){storageAvailable=false;return null;}}
-  let loaded=read(),migrated=loaded?.version===2||loaded?.version===3;
+  let loaded=read(),migrated=[2,3,4].includes(loaded?.version);
   if(loaded?.version===2){loaded.panels.forEach(p=>{if(!p.workStatus)p.workStatus=/^PNL-\d{6}$/.test(p.id)&&!loaded.completions.some(c=>c.panelId===p.id)?'draft':'in-progress';});loaded.version=3;}
   if(loaded?.version===3){loaded.panels.forEach(p=>{p.stepOverrides=p.stepOverrides||[];p.lastAccessedAt=p.lastAccessedAt||null;});loaded.version=4;}
-  let state=loaded?.version===4?loaded:clone();
+  if(loaded?.version===4){loaded.receivedMaterials=[];loaded.nextReceipt=1;loaded.version=5;}
+  let state=loaded?.version===5?loaded:clone();
   function save(){try{localStorage.setItem(key,JSON.stringify(state));}catch(error){storageAvailable=false;}window.dispatchEvent(new Event('shopchange'));}
-  function refresh(){const next=read();if(next?.version===4)state=next;else if(storageAvailable)state=clone();}
+  function refresh(){const next=read();if(next?.version===5)state=next;else if(storageAvailable)state=clone();}
   const user=id=>SEED.users.find(u=>u.id===id);
   const panel=id=>state.panels.find(p=>p.id===id);
   const stepsFor=panelId=>{const p=panel(panelId),overrides=p?.stepOverrides||[];return SEED.steps.map(s=>({...s,...(overrides.find(o=>o.id===s.id)||{})}));};
@@ -61,9 +62,11 @@
     transition(c.panelId,before);save();
   }
   window.Store={key,get state(){return state;},get panels(){return state.panels;},get storageAvailable(){return storageAvailable;},user,panel,step,stepsFor,completion,signoff,done,currentStage,inOrder,findings,openFindingCount,pendingNotes,complete,approve,refresh,
+    receivedMaterials(panelId){return state.receivedMaterials.filter(item=>item.panelId===panelId);},
+    addReceivedMaterial(data){refresh();const u=actor(),p=panel(data.panelId);if(!p)throw Error('Choose a panel or work order.');const partNumber=String(data.partNumber||'').trim(),description=String(data.description||'').trim(),quantity=Number(data.quantity);if(!partNumber)throw Error('Confirm a part number before saving.');if(!Number.isFinite(quantity)||quantity<=0)throw Error('Enter a received quantity greater than zero.');const item={id:'RCV-'+String(state.nextReceipt++).padStart(5,'0'),panelId:p.id,partNumber,description,quantity,barcode:String(data.barcode||'').trim(),source:String(data.source||'camera review'),rawText:String(data.rawText||'').trim(),by:u.id,at:stamp()};state.receivedMaterials.push(item);event(p.id,'Received material '+item.id,partNumber+' · qty '+quantity+(item.barcode?' · barcode '+item.barcode:''),u.id);save();return item;},
     signIn(badge){refresh();const u=SEED.users.find(u=>u.badge===badge);if(!u)throw Error('Badge not found. Use a demo badge below.');state.currentUserId=u.id;save();},
     signOut(){refresh();state.currentUserId=null;save();},
-    reset(){refresh();const nextSerial=state.nextSerial,nextWO=state.nextWO,nextFinding=state.nextFinding;try{localStorage.removeItem(key);}catch(error){}state=clone();state.nextSerial=Math.max(state.nextSerial,nextSerial);state.nextWO=Math.max(state.nextWO,nextWO);state.nextFinding=Math.max(state.nextFinding,nextFinding);save();},
+    reset(){refresh();const nextSerial=state.nextSerial,nextWO=state.nextWO,nextFinding=state.nextFinding,nextReceipt=state.nextReceipt;try{localStorage.removeItem(key);}catch(error){}state=clone();state.nextSerial=Math.max(state.nextSerial,nextSerial);state.nextWO=Math.max(state.nextWO,nextWO);state.nextFinding=Math.max(state.nextFinding,nextFinding);state.nextReceipt=Math.max(state.nextReceipt,nextReceipt);save();},
     undo(panelId,stepId){refresh();worker(panelId);const s=step(stepId,panelId),before=currentStage(panelId);if(!completion(panelId,stepId))throw Error('Step is not completed.');const removed=clearFrom(panelId,s.seq);event(panelId,'Undid step '+s.seq+' — '+s.title,'Cleared completions, readings and signoffs for steps '+removed.join(', ')+'. Downstream work must be recorded again.');transition(panelId,before);save();},
     removeSignoff(id){refresh();lead();const c=state.completions.find(c=>c.id===id);if(!c||!signoff(id))throw Error('Signoff not found.');worker(c.panelId);const s=step(c.stepId,c.panelId),before=currentStage(c.panelId);state.signoffs=state.signoffs.filter(x=>x.completionId!==id);const removed=clearFrom(c.panelId,s.seq,false);event(c.panelId,'Removed signoff from step '+s.seq+' — '+s.title,'Lead signoff required again.'+(removed.length?' Reset downstream steps '+removed.join(', ')+'.':''));transition(c.panelId,before);save();},
     correct(panelId,stepId,value){refresh();const u=worker(panelId),c=completion(panelId,stepId),s=step(stepId,panelId);if(!c||!s.capture)throw Error('No captured reading to correct.');const before=currentStage(panelId),reading=checkValue(s,value),at=stamp();c.readings.push({...reading,by:u.id,at});Object.assign(c,reading);if(reading.result==='fail')c.failedAtCompletion=true;state.signoffs=state.signoffs.filter(x=>x.completionId!==c.id);clearFrom(panelId,s.seq,false);event(panelId,'Corrected reading on step '+s.seq+' — '+s.title,reading.value+' '+s.capture.unit+' · '+(reading.result==='fail'?'FAILED':'PASS')+'. Previous readings remain visible; downstream records reset.');transition(panelId,before);save();},
@@ -84,6 +87,6 @@
     hours(panelId,stageId){const times=state.completions.filter(c=>c.panelId===panelId&&(!stageId||step(c.stepId).stageId===stageId)).map(c=>Date.parse(c.at));return times.length>1?(Math.max(...times)-Math.min(...times))/3600000:0;}
   };
   window.ShopUI={escape:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),date:at=>new Date(at).toLocaleString([],{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),duration:ms=>ms<3600000?Math.floor(ms/60000)+'m':ms<86400000?Math.floor(ms/3600000)+'h':Math.floor(ms/86400000)+'d '+Math.floor(ms%86400000/3600000)+'h'};
-  if(migrated||loaded?.version!==4)save();
+  if(migrated||loaded?.version!==5)save();
   window.addEventListener('storage',e=>{if(e.key===key||e.key===null){refresh();window.dispatchEvent(new Event('shopchange'));}});
 })();

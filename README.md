@@ -86,7 +86,7 @@ WIP thresholds are 3 for Receiving, Assembly, Wiring and Testing, and 2 for Fina
 
 `assets/data.js` assigns `window.SEED`; `assets/store.js` owns state, persistence and derived values. `bench.js`, `board.js` and `report.js` render explicitly labelled fields and tables. JSON serialization is used only for cloning fixtures and localStorage, never for DOM output.
 
-Everything shares the single localStorage key `panel-shop-demo-v1`. State version 4 adds last-access timestamps, per-panel checklist edits and explicit panel rows. Existing version-2 and version-3 data migrates without deleting recorded work.
+Everything shares the single localStorage key `panel-shop-demo-v1`. State version 5 adds attributed receiving-material records. Existing version-2 through version-4 data migrates without deleting recorded work.
 
 The queue defaults to **Last accessed · newest first** and retains due-date, time-in-stage, stage and project sorting. Responsive CSS adapts the bench, queue forms and checklist to phone-sized screens; the floor board remains a large-display view.
 
@@ -99,3 +99,12 @@ No test suite or dependencies are included. Development verification uses one-of
 One-off state checks covered technician ordering, independent signoff rules, cascading undo, signoff removal, failed-reading preservation, acknowledgement gating, Final QA release gates, reopening review after a new finding, and number uniqueness across reset.
 
 Browser checks under `/panel-demo/` covered opening a queue row via its serial text, search and clearing search, longest-stage sorting (PNL-588 first), user-switch routing, automatic stage advancement and board synchronization, deferred findings and entries, combined finding filters, note acknowledgement, lead out-of-sequence recording, readable activity history, three-panel work-order generation, Final QA disposition and independent release, report contents, live 14 → 22 torque correction, saved-reading correction and cascading undo. The one-stage layout and board were visually inspected. Browser logs showed no JavaScript errors. Direct filesystem navigation remains unverified because of the tool policy described above.
+
+
+## Receiving camera-scan pilot
+
+The queue now includes **Scan receiving label**. On an Android phone, the receiver can take a photo or upload an existing image. The static browser demo uses Tesseract.js to run OCR in the browser and the browser `BarcodeDetector` API when available. Parsed part number, description, quantity, barcode and panel/work-order matches are suggestions only: the receiver reviews and edits them before saving. Confirmed receipts are attributed to the signed-in user, written to panel History, and included in the build report.
+
+The first OCR use downloads the Tesseract browser worker and English language data from a CDN, so the static demo needs an internet connection for initial loading. Image recognition then runs locally in the browser and the photo is not uploaded by this demo. **Load demo label** gives a reliable fabricated path when presenting without a suitable label or network.
+
+For production Android devices, use Google ML Kit Text Recognition and Barcode Scanning with bundled models. That provides offline, on-device processing without a per-scan API charge. OCR reads printed text and barcode scanning decodes labelled identifiers. An unlabelled component cannot be identified reliably by OCR; it needs a controlled part-photo catalogue and a trained on-device image model, or a manual lookup.

@@ -195,3 +195,18 @@ This is a static clickable demo, not a production system. It has no backend, log
 The intended future production flow is to select a project and enter rack identifiers, then retrieve panel specifications and characteristics from the office system automatically. The static demo uses manual project and per-panel type entry to demonstrate that workflow without inventing a database connection.
 
 Browser storage is the only persistence. A served URL gives the most reliable two-window demo. Direct `file://` use should still open the files, but cross-window storage behavior varies by browser. The bench, queue and checklist include responsive layouts for phone-sized screens; the floor board remains optimized for a large shop display.
+
+
+## Receiving Camera Scan Demo
+
+1. Sign in with any demo badge.
+2. From **Panel queue**, select **Scan receiving label**.
+3. For a guaranteed presentation path, select **Load demo label**. The screen fills a fabricated part number, description, quantity and barcode for `PNL-611`.
+4. Review or change every suggested field, then select **Confirm and record receipt**.
+5. Open the selected panel's **History** to show the attributed receiving event.
+6. Open its **Build report** to show the received-material table.
+7. To demonstrate a real phone photo, use the image picker. Android offers the camera through the `capture="environment"` input. OCR runs in the browser; Chrome barcode detection is used where supported.
+
+Presenter wording: "The scan reduces typing, but it does not silently create inventory. The receiver verifies the extracted values and chooses the work order before the record is saved."
+
+The static demo downloads its OCR engine and English model on first use. Use **Load demo label** when the venue network is unreliable. A production Android app should replace the browser OCR layer with bundled Google ML Kit Text Recognition and Barcode Scanning models for immediate offline scanning.
