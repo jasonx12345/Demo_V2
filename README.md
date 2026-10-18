@@ -108,3 +108,8 @@ The queue now includes **Scan receiving label**. On an Android phone, the receiv
 The first OCR use downloads the Tesseract browser worker and English language data from a CDN, so the static demo needs an internet connection for initial loading. Image recognition then runs locally in the browser and the photo is not uploaded by this demo. **Load demo label** gives a reliable fabricated path when presenting without a suitable label or network.
 
 For production Android devices, use Google ML Kit Text Recognition and Barcode Scanning with bundled models. That provides offline, on-device processing without a per-scan API charge. OCR reads printed text and barcode scanning decodes labelled identifiers. An unlabelled component cannot be identified reliably by OCR; it needs a controlled part-photo catalogue and a trained on-device image model, or a manual lookup.
+
+
+### Preparing label photos
+
+Before uploading, crop the photo in your phone or laptop photo editor so only the label and barcode remain, with a small margin. Use a straight, sharp, well-lit close-up. The scan screen includes these instructions. If extraction is poor, crop closer or retake the photo and upload again. Undetected quantities and unmatched work orders remain blank for the receiver to confirm. Barcode values are kept separate from part numbers.

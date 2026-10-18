@@ -210,3 +210,8 @@ Browser storage is the only persistence. A served URL gives the most reliable tw
 Presenter wording: "The scan reduces typing, but it does not silently create inventory. The receiver verifies the extracted values and chooses the work order before the record is saved."
 
 The static demo downloads its OCR engine and English model on first use. Use **Load demo label** when the venue network is unreliable. A production Android app should replace the browser OCR layer with bundled Google ML Kit Text Recognition and Barcode Scanning models for immediate offline scanning.
+
+
+### Preparing label photos
+
+Before uploading, crop the photo in your phone or laptop photo editor so only the label and barcode remain, with a small margin. Use a straight, sharp, well-lit close-up. The scan screen includes these instructions. If extraction is poor, crop closer or retake the photo and upload again. Undetected quantities and unmatched work orders remain blank for the receiver to confirm. Barcode values are kept separate from part numbers.
