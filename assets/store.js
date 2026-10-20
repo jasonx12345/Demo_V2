@@ -1,56 +1,60 @@
 (function () {
   const key='panel-shop-demo-v1';
-  const clone=()=>JSON.parse(JSON.stringify(SEED.state));
+  const clone=()=>normalizeShopWorkflow(JSON.parse(JSON.stringify(SEED.state)));
   const uid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
   const stamp=()=>new Date().toISOString();
-  let storageAvailable=true;
+  let storageAvailable=true,notifying=false;
   function read(){try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):null;}catch(error){storageAvailable=false;return null;}}
   let loaded=read(),migrated=[2,3,4].includes(loaded?.version);
   if(loaded?.version===2){loaded.panels.forEach(p=>{if(!p.workStatus)p.workStatus=/^PNL-\d{6}$/.test(p.id)&&!loaded.completions.some(c=>c.panelId===p.id)?'draft':'in-progress';});loaded.version=3;}
   if(loaded?.version===3){loaded.panels.forEach(p=>{p.stepOverrides=p.stepOverrides||[];p.lastAccessedAt=p.lastAccessedAt||null;});loaded.version=4;}
   if(loaded?.version===4){loaded.receivedMaterials=[];loaded.nextReceipt=1;loaded.version=5;}
-  let state=loaded?.version===5?loaded:clone();
-  function save(){try{localStorage.setItem(key,JSON.stringify(state));}catch(error){storageAvailable=false;}window.dispatchEvent(new Event('shopchange'));}
-  function refresh(){const next=read();if(next?.version===5)state=next;else if(storageAvailable)state=clone();}
+  const workflowMigrated=loaded?.version===5&&!loaded.workflowVersion;
+  let state=loaded?.version===5?normalizeShopWorkflow(loaded):clone();
+  function save(){try{localStorage.setItem(key,JSON.stringify(state));}catch(error){storageAvailable=false;}notifying=true;try{window.dispatchEvent(new Event('shopchange'));}finally{notifying=false;}}
+  function refresh(){if(notifying)return;const next=read();if(next?.version===5)state=normalizeShopWorkflow(next);else if(storageAvailable)state=clone();}
   const user=id=>SEED.users.find(u=>u.id===id);
   const panel=id=>state.panels.find(p=>p.id===id);
-  const stepsFor=panelId=>{const p=panel(panelId),overrides=p?.stepOverrides||[];return SEED.steps.map(s=>({...s,...(overrides.find(o=>o.id===s.id)||{})}));};
+  const stepsFor=panelId=>{const p=panel(panelId),overrides=p?.stepOverrides||[];return p?.approvedChecklist||p?.checklist||SEED.steps.map(s=>({...s,...(overrides.find(o=>o.id===s.id)||{})}));};
   const step=(id,panelId)=>stepsFor(panelId).find(s=>s.id===id);
   const completion=(panelId,stepId)=>state.completions.find(c=>c.panelId===panelId&&c.stepId===stepId);
   const signoff=id=>state.signoffs.find(s=>s.completionId===id);
   const done=(panelId,s)=>{const c=completion(panelId,s.id);return !!c&&(!s.requiresLeadSignoff||!!signoff(c.id));};
-  const currentStage=panelId=>SEED.stages.find(s=>SEED.steps.some(st=>st.stageId===s.id&&!done(panelId,st)))||null;
-  const inOrder=(panelId,s)=>!SEED.steps.some(previous=>previous.seq<s.seq&&!done(panelId,previous));
+  const currentStage=panelId=>SEED.stages.find(s=>!state.stageClosures.some(c=>c.panelId===panelId&&c.stageId===s.id)||stepsFor(panelId).some(st=>st.stageId===s.id&&!done(panelId,st)))||null;
+  const inOrder=(panelId,s)=>currentStage(panelId)?.id===s.stageId&&!stepsFor(panelId).some(previous=>previous.seq<s.seq&&!done(panelId,previous));
   const findings=panelId=>state.findings.filter(f=>f.panelId===panelId);
   const openFindingCount=panelId=>findings(panelId).filter(f=>f.status==='open').length;
   const pendingNotes=panelId=>state.notes.filter(n=>n.panelId===panelId&&!n.removedAt&&!n.acknowledgement&&(n.by!==state.currentUserId||n.notifyAuthor));
   function actor(){const u=user(state.currentUserId);if(!u)throw Error('Sign in first.');return u;}
-  function worker(panelId){const u=actor(),p=panel(panelId);if(!p)throw Error('Panel not found.');if(p.workStatus!=='in-progress')throw Error(p.workStatus==='draft'?'A lead must release this draft before work can begin.':'Select Begin work before recording checklist activity.');if(pendingNotes(panelId).length)throw Error('Acknowledge the panel note before working.');return u;}
+  function worker(panelId){const u=actor(),p=panel(panelId);if(!p)throw Error('Panel not found.');if(p.workStatus!=='in-progress')throw Error(p.workStatus==='draft'?'A lead must release this draft before work can begin.':'Select Begin work before recording checklist activity.');if(state.holds.some(h=>h.panelId===panelId&&!h.clearedAt))throw Error('This panel is on HOLD. Receive the missing material or ask a lead to clear it.');if(pendingNotes(panelId).length)throw Error('Acknowledge the panel note before working.');return u;}
   function lead(){const u=actor();if(u.role!=='lead')throw Error('A lead is required for this action.');return u;}
   function event(panelId,action,detail,by=state.currentUserId){state.history.push({id:uid(),panelId,by,at:stamp(),action,detail});}
   function transition(panelId,before){const after=currentStage(panelId);if(after?.id!==before?.id){if(after)state.stageEntries.push({id:uid(),panelId,stageId:after.id,at:stamp()});event(panelId,after?'Entered '+after.name:'Build record completed',before?'Previous stage: '+before.name+'.':'Build reopened.');}}
   function checkQA(panelId,s){
-    if(s.seq>=17&&openFindingCount(panelId))throw Error('Disposition every open finding before completing the Final QA review or release.');
-    if(s.seq===18&&!done(panelId,step('step-17')))throw Error('Complete Review open findings before Final QA release. Leads cannot bypass this review.');
+    if(['step-17','step-18'].includes(s.id)&&openFindingCount(panelId))throw Error('Disposition every open finding before completing the Final QA review or release.');
+    if(s.id==='step-18'&&!done(panelId,step('step-17',panelId)))throw Error('Complete Review open findings before Final QA release. Leads cannot bypass this review.');
   }
   function checkValue(s,value){if(!s.capture)return {value:null,result:'pass'};if(value==null||String(value).trim()===''||!Number.isFinite(Number(value)))throw Error('Enter a numeric reading.');const n=Number(value);return {value:n,result:n>=s.capture.min&&(s.capture.max==null||n<=s.capture.max)?'pass':'fail'};}
   function clearFrom(panelId,seq,include=true){
-    const removed=state.completions.filter(c=>c.panelId===panelId&&(include?step(c.stepId).seq>=seq:step(c.stepId).seq>seq));
+    const affected=stepsFor(panelId).find(s=>include?s.seq>=seq:s.seq>seq);
+    if(affected){const index=SEED.stages.findIndex(s=>s.id===affected.stageId);state.stageClosures=state.stageClosures.filter(c=>c.panelId!==panelId||SEED.stages.findIndex(s=>s.id===c.stageId)<index);}
+    const removed=state.completions.filter(c=>c.panelId===panelId&&(include?step(c.stepId,panelId).seq>=seq:step(c.stepId,panelId).seq>seq));
     const ids=new Set(removed.map(c=>c.id));
     state.completions=state.completions.filter(c=>!ids.has(c.id));state.signoffs=state.signoffs.filter(s=>!ids.has(s.completionId));
-    return removed.map(c=>step(c.stepId).seq).sort((a,b)=>a-b);
+    return removed.map(c=>step(c.stepId,panelId).seq).sort((a,b)=>a-b);
   }
-  function invalidateReview(panelId,reason){if(completion(panelId,'step-17')||completion(panelId,'step-18')){clearFrom(panelId,17);event(panelId,'Reopened Final QA review',reason+' Review and release records were reset.');}}
+  function invalidateReview(panelId,reason){if(completion(panelId,'step-17')||completion(panelId,'step-18')){clearFrom(panelId,step('step-17',panelId).seq);event(panelId,'Reopened Final QA review',reason+' Review and release records were reset.');}}
   function complete(panelId,stepId,value){
     refresh();const u=worker(panelId),s=step(stepId,panelId);if(!s||completion(panelId,stepId))throw Error('This step is already completed or unavailable.');
     const ordered=inOrder(panelId,s);if(!ordered&&u.role!=='lead')throw Error('Complete preceding steps and lead signoffs first.');checkQA(panelId,s);
-    const before=currentStage(panelId),reading=checkValue(s,value),at=stamp();
+    if(state.stageClosures.some(c=>c.panelId===panelId&&c.stageId===s.stageId))throw Error('This stage is signed off. Reopen earlier records before recording work.');const before=currentStage(panelId),reading=checkValue(s,value),at=stamp();
+    if(s.stageId==='stage-3'&&reading.result==='fail'&&before?.id!=='stage-3')throw Error('Record a failed test only after the panel reaches Testing.');
     const c={id:uid(),panelId,stepId,by:u.id,at,...reading,readings:s.capture?[{...reading,by:u.id,at}]:[],failedAtCompletion:reading.result==='fail',outOfSequence:ordered?null:{by:u.id,at}};
     state.completions.push(c);
     event(panelId,'Completed step '+s.seq+' — '+s.title,s.capture?reading.value+' '+s.capture.unit+' · '+(reading.result==='fail'?'FAILED':'PASS'):'Check recorded.');
     if(!ordered)event(panelId,'Authorized OUT OF SEQUENCE completion','Step '+s.seq+' — '+s.title,u.id);
-    if(s.seq<17&&reading.result==='fail')invalidateReview(panelId,'A failed reading requires review.');
-    transition(panelId,before);save();
+    if(s.stageId!=='stage-4'&&reading.result==='fail')invalidateReview(panelId,'A failed reading requires review.');
+    if(s.stageId==='stage-3'&&reading.result==='fail'){save();window.Store.failTest(panelId,'Failed '+s.title+': '+reading.value+' '+s.capture.unit,s.id);return;}transition(panelId,before);save();
   }
   function approve(id){
     refresh();const c=state.completions.find(c=>c.id===id);if(!c)throw Error('Completion not found.');const u=worker(c.panelId),s=step(c.stepId,c.panelId);
@@ -86,7 +90,8 @@
     stageCounts(){return Object.fromEntries(SEED.stages.map(s=>[s.id,state.panels.filter(p=>p.workStatus!=='draft'&&currentStage(p.id)?.id===s.id).length]));},
     hours(panelId,stageId){const times=state.completions.filter(c=>c.panelId===panelId&&(!stageId||step(c.stepId).stageId===stageId)).map(c=>Date.parse(c.at));return times.length>1?(Math.max(...times)-Math.min(...times))/3600000:0;}
   };
+  installShopWorkflow({Store:window.Store,state:()=>state,save,refresh,actor,worker,lead,event,uid,stamp,clearFrom,transition});
   window.ShopUI={escape:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),date:at=>new Date(at).toLocaleString([],{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}),duration:ms=>ms<3600000?Math.floor(ms/60000)+'m':ms<86400000?Math.floor(ms/3600000)+'h':Math.floor(ms/86400000)+'d '+Math.floor(ms%86400000/3600000)+'h'};
-  if(migrated||loaded?.version!==5)save();
+  if(migrated||loaded?.version!==5||workflowMigrated)save();
   window.addEventListener('storage',e=>{if(e.key===key||e.key===null){refresh();window.dispatchEvent(new Event('shopchange'));}});
 })();

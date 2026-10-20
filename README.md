@@ -1,122 +1,61 @@
-# B&M panel shop — static clickable demo
+# Panel Shop MES demo
 
-A benchtop checklist, live shop-floor board and printable build report for a fictional panel shop. All people, panels, readings, findings and records are fabricated. Badge sign-in is cosmetic; nothing is sent anywhere.
+Responsive website for a Lead Hand, technicians and the shop TV. Fabricated demonstration records; demo badges are role selectors, not real authentication.
 
-Plain HTML, CSS and vanilla JavaScript. No install, npm, dependencies, framework, build step, external fonts, backend, API or service worker.
+Public bench: https://jasonx12345.github.io/Demo_V2/
+Priority dashboard: https://jasonx12345.github.io/Demo_V2/priority.html
+TV board: https://jasonx12345.github.io/Demo_V2/board.html
 
-## Open and publish
+## Work order flow
 
-Double-click `index.html` to open the bench locally. Use **Open floor board** for a second window in the same browser profile. All paths are relative and scripts are ordinary local scripts, so a GitHub Pages repository prefix works.
+A lead creates draft panels under an office parent job. Each has an alphanumeric rack and its own panel type, including Telecom. Review a draft with **Edit checklist**: change its rack, type and due date; add, remove or reorder steps within each stage; enter required materials. Save creates a new checklist revision. Controlled lead approvals and the Final QA review/release gates cannot be removed. Keep at least one step per stage. These are demonstration baseline checklists; actual Hydro One P&C and Telecom instructions need shop approval.
 
-GitHub Pages:
+Release freezes the approved checklist version. Drafts remain off the active TV board. Begin work starts Receiving. Completing the checklist does **not** automatically advance the panel: select **Sign off [stage] stage** after all required checks, passing readings and independent approvals are recorded. Final QA stage signoff requires a lead and every finding dispositioned.
 
-1. Push the files to a GitHub repository.
-2. Open **Settings → Pages** and choose **Deploy from a branch**.
-3. Select your branch and **/(root)**, then Save.
+Existing local state version 5 migrates to workflow revision 1. Previously completed stages receive explicitly marked legacy closures so existing progress is preserved. No fabricated labour hours or backfilled material receipts are created. PNL-611 has two sample material requirements for the Receiving pilot; new drafts start with an empty, editable material list.
 
-The browser tool used here blocks `file://` navigation, so direct double-click testing could not be performed. Browsers also differ in whether localStorage is shared between separate local HTML files. Each page works locally, but the reliable two-window demonstration uses a served URL such as GitHub Pages. A five-second board poll backs up storage events. Blocked storage displays a warning and keeps changes in memory for that window only.
+## Receiving and holds
 
-## Demo badges
+**Scan receiving label** supports a phone camera or an uploaded image. Crop to the label using your device photo editor, keep a small margin around the text and barcode, and take a sharp, straight, well-lit photo. PaddleOCR processes the image in the browser. Models preload when the scanner opens and are cached when browser storage permits. Large images are reduced to a 2,400-pixel edge; smaller images keep their resolution. Initial downloads require internet access. Photos are never uploaded by the OCR feature.
 
-| Badge | Name | Role |
-| --- | --- | --- |
-| 4471 | A. Kovach | technician |
-| 5104 | R. Bissonnette | technician |
-| 3218 | J. Okafor | lead |
-| 2907 | M. Cardoso | lead |
+Text positions, label aliases and minor spelling variations help match fields. Conflicting values or multiple panel matches need manual review. You can correct raw text and select **Match fields again from text**. Verify every suggestion, quantity and work order before confirming a receipt. Barcode reading uses the browser BarcodeDetector API where supported; OCR also recognizes explicitly printed barcode values. This is not a universal barcode decoder or part-photo classifier.
 
-**Switch user** returns to sign-in; selecting a badge always opens the queue, at the top of the page. The selected badge is shared with other bench windows. **Reset demo** restores the seven seeded panels and signs out. Generated-number counters retain their high-water marks, so numbers are not reused even after reset in the same browser data.
+Receipts reconcile against the panel's required part numbers (case-insensitive), with required, received and short quantities. Unlisted/wrong parts are shown separately and do not satisfy required material. Shortages at release, work start or receiving reconciliation create automatic material holds. Matching receipts clear the relevant automatic holds. A hold blocks checklist work and labour booking; receiving remains available. A lead can clear a hold manually with a reason, but Receiving still cannot sign off with unmet material requirements. Manual holds can be placed at any active stage with a missing item, quantity and expected-in date. Multiple overlapping holds are counted once for elapsed hold time.
 
-## Suggested walkthrough
+## Rework, quality and time
 
-1. Sign in as 4471. Search `merivale`: the queue shows all three matches and a result count. Clear the search, then sort by time in stage to show the queue reordering. Find PNL-602 and click anywhere on its row, including the project or serial text. Rows also open with Enter or Space when focused.
-2. On PNL-602, only Wiring is displayed. Complete step 10, enter 148 on step 11, and complete it. Attempt signoff as a technician to see the rule.
-3. Switch to 3218, reopen PNL-602 from the queue, and sign off. Testing opens automatically; the separate board moves the card from Wiring to Testing.
-4. On step 12, choose **Create finding**, select **Needs evaluation** and **At Testing**, and save. The finding appears in the Testing stage and the all-findings list. Add entries under different badges to demonstrate multi-person troubleshooting. The original step keeps its numbered finding marker permanently.
-5. Open PNL-589. A seeded blue 14 AWG shift-handoff note requires acknowledgement before work. The acknowledgement records a name and time; the note then remains in the collapsed notes list. Only leads can remove notes.
-6. As a lead, choose an upcoming stage and record a step out of sequence. The step, History and report show **OUT OF SEQUENCE**, the lead's name and time. Technicians continue to work in order. Independent signoff still requires a different lead.
-7. On PNL-601, complete step 16. Its seeded label-alignment finding keeps **Review open findings** and **Final QA release** locked. Open F-000002, add a lead disposition and note, return to the checklist, complete review (step 17) and release (step 18). Switch to a different lead and sign off. Open the report, choose **Save / Print PDF**, then select **Save as PDF** in the browser print window.
-8. Use **New work order** to enter your own details or select **Fill demo example**. Add one row per panel, with its own alphanumeric rack and panel type. Create the draft, edit its checklist if needed, then have a lead select **Release to shop**. A shop user selects **Begin work** before Receiving can be completed manually. Drafts stay off the floor board; released panels appear in Receiving as ready to begin.
-9. Try presenter controls: **Undo**, **Remove signoff**, and **Correct reading**. Inspect History, then reset the demo.
+In Testing, a failed measured reading automatically returns the panel to Wiring and creates a finding. **Record failed test / return to Wiring** also handles qualitative failures. The previous Wiring, Testing and Final QA completions, reading history, approvals and stage closures are archived in a rework cycle. Repeat Wiring and its signoff, then repeat Testing. Findings remain until a lead dispositions them; Final QA remains blocked until review is complete.
 
-## Findings and Final QA
+Technicians can book their own labour in minutes with a description. Booked labour is separate from elapsed stage time and hold time. Queue/project totals use actual labour entries, not first-to-last step timestamps. Current stage age and report stage elapsed time exclude holds. This demo does not integrate with payroll or office job costing.
 
-There is one problem-reporting action per step: **Create finding**. Findings have severity **awareness** or **needs evaluation**, and can be addressed now or deferred to Wiring, Testing or Final QA. Neither severity blocks ordinary build work.
+Leads assign panels from the bench or priority dashboard. **My assigned panels** filters the technician queue. The queue otherwise defaults to last accessed. The priority dashboard and TV list put holds first, then contract deadlines and stage. Completed panels move to the bottom of the dashboard and leave the TV list. Warnings use demo thresholds: more than 3 panels per stage, or more than 36 active hours in a stage. The TV shows a +N MORE indicator rather than silently hiding overflow.
 
-Each finding retains its description, original action and all subsequent entries with name, badge and timestamp. Entries render as a table. All findings can be filtered by status, severity and panel. Permanent step markers link to the full record, including dispositioned findings.
+## Reports
 
-As a demo judgment call, only leads disposition findings: **accepted as-is**, **corrected**, or **deferred to site**, with a required note. Both severities must be dispositioned before the mandatory Final QA review. The review also lists steps completed with failed readings. Leads cannot bypass this review or release with outstanding findings. Creating a new finding after review reopens review and release; normal work can continue.
+Open **Build report**, then **Save / Print PDF** and choose Save as PDF. Reports include checklist version, stage signoffs, material reconciliation and receipts, all hold history, archived rework readings/approvals, labour entries, findings, handoff notes and activity history. Final completion requires explicit Final QA stage signoff.
 
-This is a lightweight record and review, not a formal non-conformance workflow. No routing, retest generation, approval matrix or physical-action authorization is implemented.
+## Shared records across devices
 
-## Presenter recovery and sequence rules
+GitHub Pages serves static files: by default each browser has its own data. Bench, dashboard and TV tabs in one browser profile already share localStorage. To demonstrate shared records across separate devices, the repository includes an optional Node server:
 
-- **Undo** is available on every completed step. It clears that step and all later completions, readings and attached signoffs. Technicians must redo the sequence. Findings, panel notes and activity history remain. Leads can explicitly record new out-of-sequence work again.
-- **Remove signoff** is lead-only. It preserves the step completion, returns it to **NEEDS LEAD SIGNOFF**, and clears downstream completions and signoffs.
-- Before completion, a failed input can simply be re-entered (for example, torque 14 → 22). The reading preview changes immediately. A failed reading never prevents completing the step.
-- **Correct reading** on a completed step appends a named, timestamped reading. It preserves all prior readings and the permanent failed-completion marker. It removes that step's signoff and clears downstream records so they can be recorded again against the correction.
-- Completed stages are read-only during normal work. Secondary presenter controls remain available there to satisfy the recovery requirements. Upcoming stages are unavailable to technicians; leads have explicitly labelled out-of-sequence actions.
-- Final QA is now three steps: visual check (16), findings review (17), release (18). Only release needs independent lead signoff.
+1. Install Node.js, then run **npm start** from this folder. Open http://127.0.0.1:8766/.
+2. For devices on the same private network, start with HOST=0.0.0.0 (PowerShell: set $env:HOST='0.0.0.0' before npm start). Open the computer's LAN address on every device, such as http://192.168.1.20:8766/.
+3. Expand **Shared demo connection** at the bottom of each page, enter that same server address, and select **Connect and load shared records**. Connecting replaces the local demo dataset with the server dataset. The first connected browser initializes an empty server. Badge identity stays local to each device.
+4. Changes save to .demo-shared-state.json, ignored by Git. Other connected pages poll every 3 seconds. Concurrent edits use revision checks: a stale device cannot overwrite a newer record. On a conflict, local changes remain in the browser and syncing pauses. **Reload shared records** explicitly loads the server version; reapply any desired local changes afterwards.
 
-## Panel notes
+The shared server is a fabricated-data demonstration with no production authentication. It defaults to localhost. Public cross-device hosting needs a separately deployed HTTPS server and authentication; no such service has been deployed as part of the GitHub Pages update. The HTTPS GitHub Pages site cannot reliably connect directly to an HTTP private-LAN server due to browser mixed-content/private-network rules; for the LAN demo, serve the whole website from the Node server.
 
-Any signed-in person can add a panel note. The next different person opening the panel must acknowledge it before working. The seeded PNL-589 note fires for the first opener, including its author, so it is immediately demonstrable. One acknowledgement clears the banner shop-wide. A lead may remove a note; the report and History retain removed notes and their attribution. Notes do not gate physical equipment.
+## Development
 
-## Numbering and hours
+- npm install
+- npm test — OCR matching, cache/resize behavior, workflow lifecycle and DOM rendering.
+- npm run test:server — local HTTP persistence, conflict and access checks.
+- npm run build — rebuild the committed PaddleOCR browser bundle after OCR source changes.
+- npm start — optional shared demo server, port 8766 by default; PORT, HOST and DEMO_ALLOWED_ORIGINS can be configured.
 
-New panels use separate shop-wide counters for serials and work orders: initially `PNL-612` and `WO-025912`. Panel serials are not padded with zeros; work-order numbers remain six digits. The office job number is an entered parent field. Each generated order starts in Draft with zero progress. A lead releases it, and a shop user begins work before checklist activity is allowed. Counters persist with the demo data and are retained on reset. Clearing browser storage begins a new independent demo dataset.
+assets/store.js owns persistence and existing checklist actions. assets/workflow-store.js adds production workflow rules and migration; workflow-ui.js adds the controls and report sections. priority.js and board.js render the supervisor views. shared.js adds optional server synchronization. Models and the PaddleOCR Apache license ship with the static site. No SQL/office-system lookup is implemented; the process document identifies that integration as future work.
 
-Each work order can contain 1–50 explicit panel rows. Rack identifiers accept letters, such as `201A` and `201B`, and each row selects its own panel type/checklist template. While a panel is Draft, **Edit checklist** can change its step titles and instructions before release. The demonstration templates share the same controlled stage, reading and signoff structure.
-
-Hours are derived from the first and last currently recorded **step completion timestamps**: within a stage for stage hours, across a panel for panel hours. Zero or one completion means zero elapsed hours. Project hours on the queue sum panel hours. Signoff times are used for the report's completed date, but do not extend derived hours. Undo changes the current rollups; the original actions remain in History.
-
-These are approximate elapsed hours and include idle time between steps. A real deployment would reconcile them against the office's existing job-costing system. No clock-on/off UI or reconciliation is part of this demo.
-
-## Colour and board choices
-
-Green `#16A34A` denotes completed records/stages only. Blue `#2D7DD2` denotes active work and the primary action. Upcoming work is neutral; findings and attention are amber `#E8B923`; failed readings and lateness are red `#C1272D`. Passing uncommitted input stays blue because it is not yet complete.
-
-The wall board has no controls, navigation or scrolling. At 1920×1080, five columns show large serials and the Wiring bottleneck. Cards are due-date ordered; overflow is a `+N MORE` row. Stage age becomes amber after 36 hours. Late red takes precedence over attention. Finding markers are amber. Untouched panels are neutral and have no initials. Finished panels leave the board but remain in the queue and report.
-
-WIP thresholds are 3 for Receiving, Assembly, Wiring and Testing, and 2 for Final QA. Headers turn amber above threshold and red more than two above it. Due dates expire at the end of the local calendar day. Fixtures use dates relative to page initialization and persist as a coherent dataset, including panel due dates.
-
-## Data and files
-
-`index.html` is the bench, `board.html` the wall board, and `report.html?panel=PNL-601` the report. The report is light-themed and A4-ready. **Save / Print PDF** opens the browser print window; choosing **Save as PDF** creates the PDF with a panel-based suggested document name. Print CSS hides the report navigation and onscreen instructions.
-
-`assets/data.js` assigns `window.SEED`; `assets/store.js` owns state, persistence and derived values. `bench.js`, `board.js` and `report.js` render explicitly labelled fields and tables. JSON serialization is used only for cloning fixtures and localStorage, never for DOM output.
-
-Everything shares the single localStorage key `panel-shop-demo-v1`. State version 5 adds attributed receiving-material records. Existing version-2 through version-4 data migrates without deleting recorded work.
-
-The queue defaults to **Last accessed · newest first** and retains due-date, time-in-stage, stage and project sorting. Responsive CSS adapts the bench, queue forms and checklist to phone-sized screens; the floor board remains a large-display view.
-
-The future production design is to select a project and enter rack identifiers, then populate panel specifications from SQL or another office system query. This static demo keeps those fields manual because it has no backend or database connection.
-
-No test suite or dependencies are included. Development verification uses one-off state checks and a local static preview under `/panel-demo/` to exercise repository-prefix paths.
-
-## Verification of this revision
-
-One-off state checks covered technician ordering, independent signoff rules, cascading undo, signoff removal, failed-reading preservation, acknowledgement gating, Final QA release gates, reopening review after a new finding, and number uniqueness across reset.
-
-Browser checks under `/panel-demo/` covered opening a queue row via its serial text, search and clearing search, longest-stage sorting (PNL-588 first), user-switch routing, automatic stage advancement and board synchronization, deferred findings and entries, combined finding filters, note acknowledgement, lead out-of-sequence recording, readable activity history, three-panel work-order generation, Final QA disposition and independent release, report contents, live 14 → 22 torque correction, saved-reading correction and cascading undo. The one-stage layout and board were visually inspected. Browser logs showed no JavaScript errors. Direct filesystem navigation remains unverified because of the tool policy described above.
+Verification covers the full draft-to-Final-QA lifecycle, shortages/wrong parts, hold clearance, assignments, checklist additions, explicit stage gates, test-return cycles with retained failed readings, independent QA approval, labour, reopening earlier work, screen rendering and shared-server conflict handling. DOM tests verify screen behavior; they do not establish OCR accuracy or real-device visual layout/performance.
 
 
-## Receiving camera-scan pilot
-
-The queue now includes **Scan receiving label**. On an Android phone, the receiver can take a photo or upload an existing image. The static browser demo uses PaddleOCR to run OCR in the browser and the browser `BarcodeDetector` API when available. Parsed part number, description, quantity, barcode and panel/work-order matches are suggestions only: the receiver reviews and edits them before saving. Confirmed receipts are attributed to the signed-in user, written to panel History, and included in the build report.
-
-The first OCR use downloads the PaddleOCR engine and recognition models from a CDN, so the static demo needs an internet connection for initial loading. Image recognition then runs locally in the browser and the photo is not uploaded by this demo. **Load demo label** gives a reliable fabricated path when presenting without a suitable label or network.
-
-For production Android devices, use Google ML Kit Text Recognition and Barcode Scanning with bundled models. That provides offline, on-device processing without a per-scan API charge. OCR reads printed text and barcode scanning decodes labelled identifiers. An unlabelled component cannot be identified reliably by OCR; it needs a controlled part-photo catalogue and a trained on-device image model, or a manual lookup.
-
-
-### Preparing label photos
-
-Before uploading, crop the photo in your phone or laptop photo editor so only the label and barcode remain, with a small margin. Use a straight, sharp, well-lit close-up. The scan screen includes these instructions. If extraction is poor, crop closer or retake the photo and upload again. Undetected quantities and unmatched work orders remain blank for the receiver to confirm. Barcode values are kept separate from part numbers.
-
-
-### Improved OCR field matching
-
-OCR starts preloading when the receiving scanner opens. Model files use a versioned browser Cache Storage cache across visits, with a network fallback if storage is unavailable. Only model files are cached, never label photos. Oversized photos are scaled to a maximum 2,400-pixel edge before text recognition; smaller images are unchanged. Barcode detection still receives the original photo. Browser storage eviction or a fresh browser profile can require another download. Run `npm test` for matching and performance-behavior checks, and `npm run build` after changing the OCR entry module. Actual latency varies by device and has not been benchmarked by these automated checks.
-
-PaddleOCR runs locally in the website with single-threaded WebAssembly. First use downloads models and runtime files; an internet connection is required for those downloads. Labels and values are grouped by position, common label aliases and minor spelling differences are recognized, and stray border characters are ignored. Conflicting field values and multiple matching panels require manual review. No part catalogue lookup or guaranteed accuracy is implied.
+Batch creation: on New work order, enter **Panel quantity** and **Starting rack**, then select **Generate panel rows**. Numeric rack portions increment (201A, 202A, 203A); review each row and set its own panel type before creating drafts. No leading zeros are added.

@@ -1,0 +1,32 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const memory=new Map(),ctx={console,Date,Math,JSON,Event:class{},localStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)}};
+ctx.window=ctx;ctx.addEventListener=()=>{};ctx.dispatchEvent=()=>{};vm.createContext(ctx);
+for(const file of ['assets/data.js','assets/workflow-store.js','assets/store.js'])vm.runInContext(fs.readFileSync(file,'utf8'),ctx);
+const S=ctx.Store;
+assert.equal(S.currentStage('PNL-602').id,'stage-2','Legacy progress survives migration');
+S.signIn('3218');
+const p=S.createWorkOrder({project:'Workflow test',jobNumber:'TEST-1',dueDate:'2027-01-01',panels:[{rack:'201A',panelType:'Telecom Panel'}]})[0];
+const steps=JSON.parse(JSON.stringify(S.stepsFor(p.id)));steps.splice(3,0,{id:'custom-test',stageId:'stage-1',title:'Custom inspection',instruction:'Inspect the telecom device.'});
+S.setDraft(p.id,{rack:'201B',panelType:'Telecom Panel',dueDate:'2027-02-01'},steps,[{partNumber:'PS-24',description:'Power supply',quantity:2}]);
+assert.equal(S.stepsFor(p.id).length,19);assert.equal(S.panel(p.id).checklistVersion,2);
+S.assign(p.id,'kovach');S.releaseWorkOrder(p.id);assert.equal(S.activeHolds(p.id).length,1);assert.equal(S.panel(p.id).approvedVersion,2);
+assert.throws(()=>S.setDraft(p.id,{},[],[]),/draft/i);
+S.addReceivedMaterial({panelId:p.id,partNumber:'WRONG',quantity:2});assert.equal(S.materials(p.id)[0].short,2);
+S.addReceivedMaterial({panelId:p.id,partNumber:'ps-24',quantity:1});assert.equal(S.materials(p.id)[0].short,1);
+S.signIn('4471');S.beginWork(p.id);assert.throws(()=>S.complete(p.id,'step-1'),/HOLD/);
+S.addReceivedMaterial({panelId:p.id,partNumber:'PS-24',quantity:1});assert.equal(S.activeHolds(p.id).length,0);
+S.complete(p.id,'step-1');S.complete(p.id,'step-2');assert.equal(S.currentStage(p.id).id,'stage-0','Step completion does not auto-close stage');
+assert.throws(()=>S.complete(p.id,'step-3'),/preceding/);S.closeStage(p.id);assert.equal(S.currentStage(p.id).id,'stage-1');
+function finish(stage){S.signIn('4471');for(const step of S.stepsFor(p.id).filter(s=>s.stageId===stage)){if(!S.completion(p.id,step.id))S.complete(p.id,step.id,step.capture?.nominal);if(step.requiresLeadSignoff){S.signIn('3218');S.approve(S.completion(p.id,step.id).id);S.signIn('4471');}}S.closeStage(p.id);}
+finish('stage-1');
+S.bookLabor(p.id,{minutes:45,note:'Wiring work'});S.hold(p.id,{reason:'Missing ferrules',partNumber:'FERRULE',quantity:5,expectedDate:'2026-11-01'});assert.throws(()=>S.bookLabor(p.id,{minutes:10,note:'blocked'}),/HOLD/);
+S.signIn('3218');S.clearHold(S.activeHolds(p.id)[0].id,'Delivered from stores.');assert.equal(S.activeHolds(p.id).length,0);
+finish('stage-2');S.complete(p.id,'step-12');S.complete(p.id,'step-13',1);
+assert.equal(S.currentStage(p.id).id,'stage-2');assert.equal(S.state.reworks.length,1);assert.ok(S.state.reworks[0].records.some(c=>c.stepId==='step-13'&&c.result==='fail'));assert.equal(S.hours(p.id),.75);
+finish('stage-2');finish('stage-3');assert.equal(S.currentStage(p.id).id,'stage-4');
+S.complete(p.id,'step-16');assert.throws(()=>S.complete(p.id,'step-17'),/finding/);
+S.signIn('3218');S.disposition(S.state.reworks[0].findingId,'corrected','Rewired and retested.');S.complete(p.id,'step-17');S.complete(p.id,'step-18');assert.throws(()=>S.approve(S.completion(p.id,'step-18').id),/own work/);
+S.signIn('2907');S.approve(S.completion(p.id,'step-18').id);assert.ok(S.currentStage(p.id));S.closeStage(p.id);assert.equal(S.currentStage(p.id),null);assert.equal(S.status(p.id),'COMPLETE');
+// Removing an earlier record must reopen the affected signed stages.
+S.undo(p.id,'step-3');assert.equal(S.currentStage(p.id).id,'stage-1');assert.ok(S.state.reworks[0].records.length);
+console.log('Workflow lifecycle, materials, holds, assignments, custom checklist, stage gates, rework archive, independent QA, labour and reopening passed.');

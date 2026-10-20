@@ -1,0 +1,15 @@
+const assert=require('assert'),fs=require('fs'),os=require('os'),path=require('path');
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'panel-demo-test-'));process.env.DEMO_STATE_FILE=path.join(dir,'state.json');
+const server=require('./server.cjs');
+(async()=>{await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;
+ let r=await fetch(base+'/api/state');assert.equal((await r.json()).revision,0);
+ const state={version:5,workflowVersion:1,panels:[],history:[],currentUserId:'kovach'};
+ r=await fetch(base+'/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:0,state})});assert.equal(r.status,200);
+ r=await fetch(base+'/api/state');let snapshot=await r.json();assert.equal(snapshot.revision,1);assert.equal(snapshot.state.currentUserId,null,'Login is not shared across devices');
+ r=await fetch(base+'/api/state',{method:'POST',body:JSON.stringify({revision:0,state})});assert.equal(r.status,409,'Stale devices cannot overwrite newer records');
+ r=await fetch(base+'/api/state',{headers:{Origin:'https://untrusted.test'}});assert.equal(r.status,403);
+ r=await fetch(base+'/.git/config');assert.equal(r.status,403);r=await fetch(base+'/server.cjs');assert.equal(r.status,403);
+ r=await fetch(base+'/priority.html');assert.equal(r.status,200);
+ assert.equal(JSON.parse(fs.readFileSync(process.env.DEMO_STATE_FILE,'utf8')).revision,1);
+ console.log('Shared server persistence, revision conflicts, local login isolation, origin checks and static pages passed.');
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{server.closeAllConnections();server.close(()=>{if(fs.existsSync(process.env.DEMO_STATE_FILE))fs.unlinkSync(process.env.DEMO_STATE_FILE);fs.rmdirSync(dir);});});

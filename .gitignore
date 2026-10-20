@@ -1,1 +1,3 @@
 node_modules/
+.demo-shared-state.json
+.demo-shared-state.json.tmp
